@@ -9,7 +9,8 @@ function ConfigureWAP {
 	#>
 	param(
         [Parameter(Mandatory = $true)]
-        [pscredential] $Credential,
+        [System.Management.Automation.PSCredential] 
+        [System.Management.Automation.Credential()]$Credential,
         [Parameter(Mandatory = $true)]
         [string] $CertificateIdentifier,
         [Parameter(Mandatory = $true)]
@@ -34,7 +35,7 @@ function ConfigureWAP {
 			{
 				$CertSubject = $Certificate.ToLower()
 			}
-			$CertificateThumbprint = (get-childitem -path cert:\LocalMachine\My\ | where {$_.Subject.ToLower() -eq $CertSubject}).Thumbprint
+			$CertificateThumbprint = (get-childitem -path cert:\LocalMachine\My\ | where-Object {$_.Subject.ToLower() -eq $CertSubject}).Thumbprint
 
 		}
 		else
@@ -48,6 +49,9 @@ function ConfigureWAP {
 [DscResource()]
 class cNewWapConfiguration
 {
+    ### Determines whether or not the WAP Config should exist.
+    [DscProperty()]
+    [Ensure] $Ensure;
 
 	<#
     The FederationServiceName property is the name of the Active Directory Federation Services (ADFS) service. For example: adfs-service.contoso.com.
@@ -114,11 +118,7 @@ class cNewWapConfiguration
             }
 
             if ($WapConfiguration) {
-                Write-Verbose -Message 'Configuring Active Directory Federation Services (ADFS) properties.';
-                $AdfsProperties = @{
-                    DisplayName = $this.DisplayName;
-                };
-                Set-AdfsProperties @AdfsProperties;
+				#Nothing we can do to reconfigure the service here either, so do nothing
             }
         }
 
@@ -139,7 +139,7 @@ class cNewWapConfiguration
         Write-Verbose -Message 'Testing for presence of Web Application Proxy.';
 
         try {
-            $WapConfiguration= Get-WebApplicationProxyConfiguration -ErrorAction Stop;
+            $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop;
         }
         catch {
             $Compliant = $false;
@@ -149,7 +149,7 @@ class cNewWapConfiguration
         if ($this.Ensure -eq 'Present') {
             Write-Verbose -Message 'Checking for correct ADFS service configuration.';
 			
-            if (-not($Properties.ADFSUrl.ToLower() -contains $this.FederationServiceName.ToLower()) {
+            if (-not($WapConfiguration.ADFSUrl.ToLower() -contains $this.FederationServiceName.ToLower())) {
                 Write-Verbose -Message 'ADFS Service Name doesn''t match the desired state.';
                 $Compliant = $false;
             }
@@ -157,7 +157,7 @@ class cNewWapConfiguration
 
         if ($this.Ensure -eq 'Absent') {
             Write-Verbose -Message 'Checking for absence of WAP Configuration.';
-            if ($Properties) {
+            if ($WapConfiguration) {
                 Write-Verbose -Message
                 $Compliant = $false;
             }
