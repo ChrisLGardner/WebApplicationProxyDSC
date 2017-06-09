@@ -1,6 +1,6 @@
 enum Ensure {
-    Absent;
-    Present;
+    Absent
+    Present
 }
 
 function ConfigureWAP {
@@ -19,9 +19,9 @@ function ConfigureWAP {
         [string] $FederationServiceName
 	)
 
-	$CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name;
+	$CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name
 
-    Write-Verbose -Message ('Entering function {0}' -f $CmdletName);
+    Write-Verbose -Message ('Entering function {0}' -f $CmdletName)
 
 
 		if ($CertificateIdentifier.ToLower() -eq 'subject')
@@ -51,47 +51,49 @@ class cNewWapConfiguration
 {
     ### Determines whether or not the WAP Config should exist.
     [DscProperty()]
-    [Ensure] $Ensure;
+    [Ensure] $Ensure
 
 	<#
     The FederationServiceName property is the name of the Active Directory Federation Services (ADFS) service. For example: adfs-service.contoso.com.
     #>
     [DscProperty(key)]
-    [string] $FederationServiceName;
+    [string] $FederationServiceName
 
 	<#
     The Credential property is a PSCredential that represents the username/password of an Active Directory user account that is a member of
     the Domain Administrators security group. This account will be used to add a new proxy to Active Directory Federation Services (ADFS).
     #>
     [DscProperty(Mandatory)]
-    [pscredential] $Credential;
+    [pscredential] $Credential
 
 	<#
     The CertificateIdentifier property can be either 'Subject' or 'Thumbprint' and indicates what the contents of the 'Certificate' property contains.
     #>
     [DscProperty(Mandatory)]
-    [string] $CertificateIdentifier;
+    [string] $CertificateIdentifier
 
     <#
     The Certificate property is either the Subject Name of the certificate or  the thumbprint of the certificate, located in the local computer's certificate store, that will be bound to the 
     Active Directory Federation Service (ADFS) farm.
     #>
     [DscProperty(Mandatory)]
-    [string] $Certificate;
+    [string] $Certificate
 
 	[cNewWapConfiguration] Get()
 	{
-		Write-Verbose -Message 'Starting retrieving Web Applucation Proxy configuration.';
+		Write-Verbose -Message 'Starting retrieving Web Application Proxy configuration.'
 
         try {
-            $WapConfiguration= Get-WebApplicationProxyConfiguration -ErrorAction Stop;
+            $WapConfiguration= Get-WebApplicationProxyConfiguration -ErrorAction Stop
+            $this.Certificate = $WapConfiguration.Certificate
+            $this.FederationServiceName = $WapConfiguration.FederationServiceName
         }
         catch {
-            Write-Verbose -Message ('Error occurred while retrieving Web Application Proxy configuration: {0}' -f $global:Error[0].Exception.Message);
+            Write-Verbose -Message ('Error occurred while retrieving Web Application Proxy configuration: {0}' -f $global:Error[0].Exception.Message)
         }
 
-        Write-Verbose -Message 'Finished retrieving Web Applucation Proxy configuration.';
-        return $this;
+        Write-Verbose -Message 'Finished retrieving Web Application Proxy configuration.'
+        return $this
 
 	}
 
@@ -100,21 +102,21 @@ class cNewWapConfiguration
         ### If WAP shoud be present, then go ahead and configure it.
         if ($this.Ensure -eq [Ensure]::Present) {
             try{
-                $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop;
+                $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop
             }
             catch {
                 $WapConfiguration = $false
             }
 
             if (!$WapConfiguration) {
-                Write-Verbose -Message 'Configuring Web Application Proxy.';
+                Write-Verbose -Message 'Configuring Web Application Proxy.'
                 $WapSettings = @{
-                    Credential = $this.Credential;
-                    CertificateIdentifier = $this.CertificateIdentifier;
-                    Certificate = $this.Certificate;
-                    FederationServiceName = $this.FederationServiceName;
-                };
-                ConfigureWAP @WapSettings;
+                    Credential = $this.Credential
+                    CertificateIdentifier = $this.CertificateIdentifier
+                    Certificate = $this.Certificate
+                    FederationServiceName = $this.FederationServiceName
+                }
+                ConfigureWAP @WapSettings
             }
 
             if ($WapConfiguration) {
@@ -127,43 +129,132 @@ class cNewWapConfiguration
 
         }
 
-        return;
+        return
 	}
 
 	[bool] Test()
 	{
         # Assume compliance by default
-        $Compliant = $true;
+        $Compliant = $true
 
 
-        Write-Verbose -Message 'Testing for presence of Web Application Proxy.';
+        Write-Verbose -Message 'Testing for presence of Web Application Proxy.'
 
         try {
-            $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop;
+            $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop
         }
         catch {
-            $Compliant = $false;
-            return $Compliant;
+            $Compliant = $false
+            return $Compliant
         }
 
         if ($this.Ensure -eq 'Present') {
-            Write-Verbose -Message 'Checking for correct ADFS service configuration.';
+            Write-Verbose -Message 'Checking for correct ADFS service configuration.'
 			
             if (-not($WapConfiguration.ADFSUrl.ToLower() -contains $this.FederationServiceName.ToLower())) {
-                Write-Verbose -Message 'ADFS Service Name doesn''t match the desired state.';
-                $Compliant = $false;
+                Write-Verbose -Message 'ADFS Service Name doesn''t match the desired state.'
+                $Compliant = $false
             }
         }
 
         if ($this.Ensure -eq 'Absent') {
-            Write-Verbose -Message 'Checking for absence of WAP Configuration.';
+            Write-Verbose -Message 'Checking for absence of WAP Configuration.'
             if ($WapConfiguration) {
                 Write-Verbose -Message
-                $Compliant = $false;
+                $Compliant = $false
             }
         }
 
-        return $Compliant;
+        return $Compliant
 	}
+
+}
+
+[DscResource()]
+class cWapApplication {
+    
+    # Ensure if the application should exist on the node.
+    [DscProperty()]
+    [Ensure]$Ensure
+
+    # Name of the Application
+    [DscProperty(Key)]
+    [string]$Name
+
+    [DscProperty()]
+    [ValidateSet('PassThrough')]
+    [String]$ExternalPreAuthentication
+
+    [DscProperty()]
+    [String]$ExternalUrl
+
+    [DscProperty()]
+    [String]$ExternalCertificateThumbprint
+
+    [DscProperty()]
+    [string]$BackendServerUri
+
+    [DscProperty()]
+    [Bool]$EnableSignOut
+
+    [DscProperty()]
+    [uint32]$InactiveTransactionsTimeoutSec
+
+    [DscProperty()]
+    [string]$ClientCertificatePreauthenticationThumbprint
+
+    [DscProperty()]
+    [bool]$EnableHttpRedirect
+
+    [DscProperty()]
+    [String]$ADFSUserCertificateStore
+
+    [DscProperty()]
+    [bool]$DisableHttpOnlyCookieProtection
+
+    [DscProperty()]
+    [Uint32]$PersistentAccessCookieExpirationTimeSec
+
+    [DscProperty()]
+    [bool]$DisableTranslateUrlInRequestHeaders
+
+    [DscProperty()]
+    [bool]$DisableTranslateUrlInResponseHeaders
+
+    [DscProperty()]
+    [String]$BackendServerAuthenticationSPN
+
+    [DscProperty()]
+    [String]$ADFSRelyingPartyName
+
+    [DscProperty()]
+    [bool]$UseOAuthAuthentication
+
+    [cWapApplication]Get() {
+        Get-WebApplicationProxyApplication -Name $This.Name
+        return $this
+    }
+
+    [void]Set() {
+        $AddApplicationProperties = @{
+            Name = $This.Name
+            BackendServerUrl = $This.BackendServerUri
+            ExternalCertificateThumbprint = $this.ExternalCertificateThumbprint
+            ExternalUrl = $This.ExternalUrl
+            ExternalPreAuthentication = $This.ExternalPreAuthentication
+        }
+
+        Add-WebApplicationProxyApplication @AddApplicationProperties
+    }
+
+    [bool]Test() {
+        $Application = Get-WebApplicationProxyApplication -Name $This.Name
+        
+        if ($Application) {
+            return $true
+        }
+
+        return $false
+    }
 
 }
