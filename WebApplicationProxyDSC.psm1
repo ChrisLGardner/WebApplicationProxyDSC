@@ -35,7 +35,9 @@ function ConfigureWAP {
 			{
 				$CertSubject = $Certificate.ToLower()
 			}
-			$CertificateThumbprint = (get-childitem -path cert:\LocalMachine\My\ | where-Object {$_.Subject.ToLower() -eq $CertSubject}).Thumbprint
+            $CertificateThumbprint = Get-ChildItem -Path cert:\LocalMachine\My\ |
+            where-Object {$_.Subject.ToLower() -eq $CertSubject} |
+            Select-Object -ExpandProperty Thumbprint
 
 		}
 		else
@@ -47,7 +49,7 @@ function ConfigureWAP {
 }
 
 [DscResource()]
-class cNewWapConfiguration
+class WapConfiguration
 {
     ### Determines whether or not the WAP Config should exist.
     [DscProperty()]
@@ -79,7 +81,7 @@ class cNewWapConfiguration
     [DscProperty(Mandatory)]
     [string] $Certificate;
 
-	[cNewWapConfiguration] Get()
+	[WapConfiguration] Get()
 	{
 		Write-Verbose -Message 'Starting retrieving Web Applucation Proxy configuration.';
 
