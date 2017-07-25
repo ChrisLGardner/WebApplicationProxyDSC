@@ -1,6 +1,6 @@
 @{
     # Script module or binary module file associated with this manifest.
-    RootModule = 'cWAP.psm1'
+    RootModule = 'WebApplicationProxyDSC.psm1'
 
     # Version number of this module.
     ModuleVersion = '1.1.0.0'
@@ -28,7 +28,7 @@
 
     # Required for DSC to detect PS class-based resources.
     DscResourcesToExport = @(
-        'cNewWapConfiguration';
-        'cWapApplication';
+        'WapConfiguration';
+        'WapApplication';
         );`
 }  
