@@ -91,7 +91,7 @@ class WapConfiguration
             $this.FederationServiceName = $WapConfiguration.FederationServiceName
         }
         catch {
-            Write-Verbose -Message ('Error occurred while retrieving Web Application Proxy configuration: {0}' -f $global:Error[0].Exception.Message)
+            Write-Error -Message ('Error occurred while retrieving Web Application Proxy configuration: {0}' -f $global:Error[0].Exception.Message)
         }
 
         Write-Verbose -Message 'Finished retrieving Web Application Proxy configuration.'
