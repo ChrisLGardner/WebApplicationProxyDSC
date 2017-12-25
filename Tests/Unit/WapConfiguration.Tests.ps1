@@ -1,5 +1,5 @@
 Using Module ..\..\WebApplicationProxyDSC.psd1
-
+Import-Module ..\..\WebApplicationProxyDSC.psd1
 Function Get-WebApplicationProxyConfiguration {
     [cmdletbinding()]
     Param (
