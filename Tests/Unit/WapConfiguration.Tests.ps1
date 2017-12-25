@@ -1,5 +1,6 @@
 Using Module ..\..\WebApplicationProxyDSC.psd1
-Import-Module "$PSScriptRoot\..\..\WebApplicationProxyDSC.psd1"
+Import-Module "$PSScriptRoot\..\..\WebApplicationProxyDSC.psd1" -Force
+
 Function Get-WebApplicationProxyConfiguration {
     [cmdletbinding()]
     Param (
@@ -13,11 +14,11 @@ Describe 'WapConfiguration -- Testing Get Method' {
         {$Sut.Get()} | Should -Throw
     }
     It 'Should call mock' {
-        Mock -CommandName Get-WebApplicationProxyConfiguration -MockWith {Throw 'Nothing to see'}
+        Mock -CommandName Get-WebApplicationProxyConfiguration -MockWith {'Nothing to see'}
 
-        $Sut.Get()
+        {$Sut.Get()} | Should -Not -Throw
 
-        Assert-MockCalled -CommandName Get-WebApplicationProxyConfiguration -Times 1
+        Assert-MockCalled -CommandName Get-WebApplicationProxyConfiguration -Exactly -Times 1 -Scope It
     }
     It 'Should return object of type WapConfiguration' {
         ($Sut.Get()).GetType().Name | Should -Be 'WapConfiguration'
