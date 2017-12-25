@@ -9,7 +9,7 @@ function ConfigureWAP {
 	#>
 	param(
         [Parameter(Mandatory = $true)]
-        [System.Management.Automation.PSCredential] 
+        [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential,
         [Parameter(Mandatory = $true)]
         [string] $CertificateIdentifier,
@@ -75,7 +75,7 @@ class WapConfiguration
     [string] $CertificateIdentifier
 
     <#
-    The Certificate property is either the Subject Name of the certificate or  the thumbprint of the certificate, located in the local computer's certificate store, that will be bound to the 
+    The Certificate property is either the Subject Name of the certificate or  the thumbprint of the certificate, located in the local computer's certificate store, that will be bound to the
     Active Directory Federation Service (ADFS) farm.
     #>
     [DscProperty(Mandatory)]
@@ -152,7 +152,7 @@ class WapConfiguration
 
         if ($this.Ensure -eq 'Present') {
             Write-Verbose -Message 'Checking for correct ADFS service configuration.'
-			
+
             if (-not($WapConfiguration.ADFSUrl.ToLower() -contains $this.FederationServiceName.ToLower())) {
                 Write-Verbose -Message 'ADFS Service Name doesn''t match the desired state.'
                 $Compliant = $false
@@ -162,7 +162,7 @@ class WapConfiguration
         if ($this.Ensure -eq 'Absent') {
             Write-Verbose -Message 'Checking for absence of WAP Configuration.'
             if ($WapConfiguration) {
-                Write-Verbose -Message
+                Write-Verbose -Message "WAP Configured but shouldn't be, returning false"
                 $Compliant = $false
             }
         }
@@ -174,7 +174,7 @@ class WapConfiguration
 
 [DscResource()]
 class WapApplication {
-    
+
     # Ensure if the application should exist on the node.
     [DscProperty()]
     [Ensure]$Ensure
@@ -251,7 +251,7 @@ class WapApplication {
 
     [bool]Test() {
         $Application = Get-WebApplicationProxyApplication -Name $This.Name
-        
+
         if ($Application) {
             return $true
         }
