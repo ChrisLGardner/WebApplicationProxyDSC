@@ -89,8 +89,10 @@ class WapConfiguration
             $WapConfiguration= Get-WebApplicationProxyConfiguration -ErrorAction Stop
             $this.Certificate = $WapConfiguration.Certificate
             $this.FederationServiceName = $WapConfiguration.FederationServiceName
+            $this.Ensure = [Ensure]::Present
         }
         catch {
+            $this.Ensure = [Ensure]::Absent
             Write-Error -Message ('Error occurred while retrieving Web Application Proxy configuration: {0}' -f $global:Error[0].Exception.Message)
         }
 
