@@ -9,9 +9,10 @@ Function Get-WebApplicationProxyConfiguration {
 Describe 'WapConfiguration -- Testing Get Method' {
     $Sut = [WapConfiguration]::New()
 
-    It 'Should throw when no configuration is available' {
+    It 'Should return Ensure = Absent when no configuration is available' {
         Mock -CommandName Get-WebApplicationProxyConfiguration -MockWith {Throw 'Nothing to see'}
-        {$Sut.Get()} | Should -Throw
+        $Sut.Get()
+        $Sut.Ensure.ToString() | Should -Be 'Absent'
     }
     It 'Should call mock' {
         Mock -CommandName Get-WebApplicationProxyConfiguration -MockWith {'Nothing to see'}
