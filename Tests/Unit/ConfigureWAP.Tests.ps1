@@ -1,1 +1,1 @@
-Import-Module ..\..\WebApplicationProxyDSC.psd1
+Import-Module "$PSScriptRoot\..\..\WebApplicationProxyDSC.psd1" -Force
