@@ -43,6 +43,7 @@ function ConfigureWAP {
         else
         {
             $CertificateThumbprint = $Certificate
+        }
 
     Install-WebApplicationProxy -CertificateThumbprint $CertificateThumbprint -FederationServiceName $FederationServiceName -FederationServiceTrustCredential $Credential
 }
