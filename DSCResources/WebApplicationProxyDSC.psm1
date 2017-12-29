@@ -4,10 +4,10 @@ enum Ensure {
 }
 
 function ConfigureWAP {
-	<#
-	Function to configure the Web Application Proxy service and connect it to ADFS
-	#>
-	param(
+    <#
+    Function to configure the Web Application Proxy service and connect it to ADFS
+    #>
+    param(
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]$Credential,
@@ -17,35 +17,34 @@ function ConfigureWAP {
         [string] $Certificate,
         [Parameter(Mandatory = $true)]
         [string] $FederationServiceName
-	)
+    )
 
-	$CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name
+    $CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name
 
     Write-Verbose -Message ('Entering function {0}' -f $CmdletName)
 
 
-		if ($CertificateIdentifier.ToLower() -eq 'subject')
-		{
+        if ($CertificateIdentifier.ToLower() -eq 'subject')
+        {
 
-			if ($Certificate.ToLower().Substring(0,3) -ne 'cn=')
-			{
-			   $CertSubject = "cn=" + $Certificate.ToLower()
-			}
-			else
-			{
-				$CertSubject = $Certificate.ToLower()
-			}
+            if ($Certificate.ToLower().Substring(0,3) -ne 'cn=')
+            {
+               $CertSubject = "cn=" + $Certificate.ToLower()
+            }
+            else
+            {
+                $CertSubject = $Certificate.ToLower()
+            }
             $CertificateThumbprint = Get-ChildItem -Path cert:\LocalMachine\My\ |
             where-Object {$_.Subject.ToLower() -eq $CertSubject} |
             Select-Object -ExpandProperty Thumbprint
 
-		}
-		else
-		{
-			$CertificateThumbprint = $Certificate
-		}
+        }
+        else
+        {
+            $CertificateThumbprint = $Certificate
 
-	Install-WebApplicationProxy -CertificateThumbprint $CertificateThumbprint -FederationServiceName $FederationServiceName -FederationServiceTrustCredential $Credential
+    Install-WebApplicationProxy -CertificateThumbprint $CertificateThumbprint -FederationServiceName $FederationServiceName -FederationServiceTrustCredential $Credential
 }
 
 [DscResource()]
@@ -55,20 +54,20 @@ class WapConfiguration
     [DscProperty()]
     [Ensure] $Ensure
 
-	<#
+    <#
     The FederationServiceName property is the name of the Active Directory Federation Services (ADFS) service. For example: adfs-service.contoso.com.
     #>
     [DscProperty(key)]
     [string] $FederationServiceName
 
-	<#
+    <#
     The Credential property is a PSCredential that represents the username/password of an Active Directory user account that is a member of
     the Domain Administrators security group. This account will be used to add a new proxy to Active Directory Federation Services (ADFS).
     #>
     [DscProperty(Mandatory)]
     [pscredential] $Credential
 
-	<#
+    <#
     The CertificateIdentifier property can be either 'Subject' or 'Thumbprint' and indicates what the contents of the 'Certificate' property contains.
     #>
     [DscProperty(Mandatory)]
@@ -81,9 +80,9 @@ class WapConfiguration
     [DscProperty(Mandatory)]
     [string] $Certificate
 
-	[WapConfiguration] Get()
-	{
-		Write-Verbose -Message 'Starting retrieving Web Application Proxy configuration.'
+    [WapConfiguration] Get()
+    {
+        Write-Verbose -Message 'Starting retrieving Web Application Proxy configuration.'
 
         try {
             $WapConfiguration= Get-WebApplicationProxyConfiguration -ErrorAction Stop
@@ -99,10 +98,10 @@ class WapConfiguration
         Write-Verbose -Message 'Finished retrieving Web Application Proxy configuration.'
         return $this
 
-	}
+    }
 
-	[void] Set()
-	{
+    [void] Set()
+    {
         ### If WAP shoud be present, then go ahead and configure it.
         if ($this.Ensure -eq [Ensure]::Present) {
             try{
@@ -124,7 +123,7 @@ class WapConfiguration
             }
 
             if ($WapConfiguration) {
-				#Nothing we can do to reconfigure the service here either, so do nothing
+                #Nothing we can do to reconfigure the service here either, so do nothing
             }
         }
 
@@ -134,10 +133,10 @@ class WapConfiguration
         }
 
         return
-	}
+    }
 
-	[bool] Test()
-	{
+    [bool] Test()
+    {
         # Assume compliance by default
         $Compliant = $true
 
@@ -170,7 +169,7 @@ class WapConfiguration
         }
 
         return $Compliant
-	}
+    }
 
 }
 
