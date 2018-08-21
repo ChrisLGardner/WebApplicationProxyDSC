@@ -16,7 +16,9 @@ function ConfigureWAP {
         [Parameter(Mandatory = $true)]
         [string] $Certificate,
         [Parameter(Mandatory = $true)]
-        [string] $FederationServiceName
+        [string] $FederationServiceName,
+        [Parameter(Mandatory = $false)]
+        [string] $HttpsPort
 	)
 
 	$CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name;
@@ -43,9 +45,19 @@ function ConfigureWAP {
 		else
 		{
 			$CertificateThumbprint = $Certificate
-		}
+        }
+        
+        $WapParams = @{
+            CertificateThumbprint = $CertificateThumbprint;
+            FederationServiceName = $FederationServiceName;
+            FederationServiceTrustCredential = $Credential
+        }
 
-	Install-WebApplicationProxy -CertificateThumbprint $CertificateThumbprint -FederationServiceName $FederationServiceName -FederationServiceTrustCredential $Credential
+        if ($HttpsPort) {
+            $WapParams.Add('HttpsPort',$HttpsPort)
+        }
+        #
+	Install-WebApplicationProxy @WapParams
 }
 
 [DscResource()]
@@ -60,6 +72,12 @@ class WapConfiguration
     #>
     [DscProperty(key)]
     [string] $FederationServiceName;
+
+    <#
+    The HttpsPort property is the SSLPort of the Active Directory Federation Services (ADFS) service, if this differs from default. For example: 8443.
+    #>
+    [DscProperty(key)]
+    [string] $HttpsPort;
 
 	<#
     The Credential property is a PSCredential that represents the username/password of an Active Directory user account that is a member of
@@ -116,6 +134,9 @@ class WapConfiguration
                     Certificate = $this.Certificate;
                     FederationServiceName = $this.FederationServiceName;
                 };
+                if ($this.HttpsPort) {
+                    $WapSettings.Add('HttpsPort',$this.HttpsPort)
+                }
                 ConfigureWAP @WapSettings;
             }
 
