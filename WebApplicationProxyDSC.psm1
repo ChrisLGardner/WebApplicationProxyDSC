@@ -76,7 +76,7 @@ class WapConfiguration
     <#
     The HttpsPort property is the SSLPort of the Active Directory Federation Services (ADFS) service, if this differs from default. For example: 8443.
     #>
-    [DscProperty(key)]
+    [DscProperty()]
     [string] $HttpsPort;
 
 	<#
