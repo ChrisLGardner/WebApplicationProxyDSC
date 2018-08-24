@@ -72,9 +72,9 @@ function ConfigureWAP {
     if ($FirstFail){
         if ($HttpsPort) {
             Write-Verbose "In HttpsPort if in try catch"
-            $AdfsSvcUrl = "https://" + $FederationServiceName + ":" + $HttsPort + "/adfs/ls"
-            $AdfsOauthUrl = "https://" + $FederationServiceName + ":" + $HttsPort + "/adfs/oauth2/authorize"
-            $AdfsSignOutUrl = "https://" + $FederationServiceName + ":" + $HttsPort + "/adfs/ls/?wa=wsignout1.0"
+            $AdfsSvcUrl = "https://" + $FederationServiceName + ":" + $HttpsPort + "/adfs/ls"
+            $AdfsOauthUrl = "https://" + $FederationServiceName + ":" + $HttpsPort + "/adfs/oauth2/authorize"
+            $AdfsSignOutUrl = "https://" + $FederationServiceName + ":" + $HttpsPort + "/adfs/ls/?wa=wsignout1.0"
                 
             Write-Verbose "Attempting to set proxy config with following urls:"
             Write-Verbose "AdfsSvcUrl  $AdfsSvcUrl"
