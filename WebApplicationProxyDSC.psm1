@@ -4,10 +4,10 @@ enum Ensure {
 }
 
 function ConfigureWAP {
-	<#
+    <#
 	Function to configure the Web Application Proxy service and connect it to ADFS
 	#>
-	param(
+    param(
         [Parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential] 
         [System.Management.Automation.Credential()]$Credential,
@@ -19,55 +19,97 @@ function ConfigureWAP {
         [string] $FederationServiceName,
         [Parameter(Mandatory = $false)]
         [string] $HttpsPort
-	)
+    )
 
-	$CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name;
+    $CmdletName = $PSCmdlet.MyInvocation.MyCommand.Name;
 
     Write-Verbose -Message ('Entering function {0}' -f $CmdletName);
 
 
-		if ($CertificateIdentifier.ToLower() -eq 'subject')
-		{
+    if ($CertificateIdentifier.ToLower() -eq 'subject') {
 
-			if ($Certificate.ToLower().Substring(0,3) -ne 'cn=')
-			{
-			   $CertSubject = "cn=" + $Certificate.ToLower()
-			}
-			else
-			{
-				$CertSubject = $Certificate.ToLower()
-			}
-            $CertificateThumbprint = Get-ChildItem -Path cert:\LocalMachine\My\ |
+        if ($Certificate.ToLower().Substring(0, 3) -ne 'cn=') {
+            $CertSubject = "cn=" + $Certificate.ToLower()
+        }
+        else {
+            $CertSubject = $Certificate.ToLower()
+        }
+        $CertificateThumbprint = Get-ChildItem -Path cert:\LocalMachine\My\ |
             where-Object {$_.Subject.ToLower() -eq $CertSubject} |
             Select-Object -ExpandProperty Thumbprint
 
-		}
-		else
-		{
-			$CertificateThumbprint = $Certificate
-        }
+    }
+    else {
+        $CertificateThumbprint = $Certificate
+    }
         
-        $WapParams = @{
-            CertificateThumbprint = $CertificateThumbprint;
-            FederationServiceName = $FederationServiceName;
-            FederationServiceTrustCredential = $Credential
-        }
+    $WapParams = @{
+        CertificateThumbprint            = $CertificateThumbprint;
+        FederationServiceName            = $FederationServiceName;
+        FederationServiceTrustCredential = $Credential
+    }
 
+    if ($HttpsPort) {
+        $WapParams.Add('HttpsPort', $HttpsPort)
+    }
+        
+    Write-Verbose "Installing Web Application Proxy with Params:"
+    $Message = ($WapParams | Out-String)
+    Write-Verbose -Message $Message
+    try {
+        Install-WebApplicationProxy @WapParams -ErrorAction stop
+    }
+    catch {
+        Write-Verbose "Caught Error on first Install Web Application Proxy"
         if ($HttpsPort) {
-            $WapParams.Add('HttpsPort',$HttpsPort)
+            $FirstFail = $true
         }
-        #
-	Install-WebApplicationProxy @WapParams
+        else {
+            throw $_.Exception
+        }
+    
+    }
+    if ($FirstFail){
+        if ($HttpsPort) {
+            Write-Verbose "In HttpsPort if in try catch"
+            $AdfsSvcUrl = "https://" + $FederationServiceName + ":" + $HttsPort + "/adfs/ls"
+            $AdfsOauthUrl = "https://" + $FederationServiceName + ":" + $HttsPort + "/adfs/oauth2/authorize"
+            $AdfsSignOutUrl = "https://" + $FederationServiceName + ":" + $HttsPort + "/adfs/ls/?wa=wsignout1.0"
+                
+            Write-Verbose "Attempting to set proxy config with following urls:"
+            Write-Verbose "AdfsSvcUrl  $AdfsSvcUrl"
+            Write-Verbose "AdfsOauthUrl  $AdfsOauthUrl"
+            Write-Verbose "AdfsSignOutUrl $AdfsSignOutUrl"
+            try {
+                Set-WebApplicationProxyConfiguration -ADFSUrl $AdfsSvcUrl -OAuthAuthenticationURL $AdfsOauthUrl -ADFSSignOutURL $AdfsSignOutUrl -ErrorAction stop
+            }
+            catch {
+                Write-Verbose "Caught Error on set Web Application Proxy"
+            }
+
+            Write-Verbose "Installng web application proxy 2nd try with params:"
+            $Message = ($WapParams | Out-String)
+            Write-Verbose -Message $Message
+            try {
+                Install-WebApplicationProxy @WapParams -ErrorAction stop
+            }
+            catch {
+                Write-Verbose "Caught Error on second Install Web Application Proxy"
+                throw $_.Exception
+            }
+        }
+    }
+
 }
 
+
 [DscResource()]
-class WapConfiguration
-{
+class WapConfiguration {
     ### Determines whether or not the WAP Config should exist.
     [DscProperty()]
     [Ensure] $Ensure;
 
-	<#
+    <#
     The FederationServiceName property is the name of the Active Directory Federation Services (ADFS) service. For example: adfs-service.contoso.com.
     #>
     [DscProperty(key)]
@@ -79,14 +121,14 @@ class WapConfiguration
     [DscProperty()]
     [string] $HttpsPort;
 
-	<#
+    <#
     The Credential property is a PSCredential that represents the username/password of an Active Directory user account that is a member of
     the Domain Administrators security group. This account will be used to add a new proxy to Active Directory Federation Services (ADFS).
     #>
     [DscProperty(Mandatory)]
     [pscredential] $Credential;
 
-	<#
+    <#
     The CertificateIdentifier property can be either 'Subject' or 'Thumbprint' and indicates what the contents of the 'Certificate' property contains.
     #>
     [DscProperty(Mandatory)]
@@ -99,12 +141,11 @@ class WapConfiguration
     [DscProperty(Mandatory)]
     [string] $Certificate;
 
-	[WapConfiguration] Get()
-	{
-		Write-Verbose -Message 'Starting retrieving Web Applucation Proxy configuration.';
+    [WapConfiguration] Get() {
+        Write-Verbose -Message 'Starting retrieving Web Applucation Proxy configuration.';
 
         try {
-            $WapConfiguration= Get-WebApplicationProxyConfiguration -ErrorAction Stop;
+            $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop;
         }
         catch {
             Write-Verbose -Message ('Error occurred while retrieving Web Application Proxy configuration: {0}' -f $global:Error[0].Exception.Message);
@@ -113,13 +154,12 @@ class WapConfiguration
         Write-Verbose -Message 'Finished retrieving Web Applucation Proxy configuration.';
         return $this;
 
-	}
+    }
 
-	[void] Set()
-	{
+    [void] Set() {
         ### If WAP shoud be present, then go ahead and configure it.
         if ($this.Ensure -eq [Ensure]::Present) {
-            try{
+            try {
                 $WapConfiguration = Get-WebApplicationProxyConfiguration -ErrorAction Stop;
             }
             catch {
@@ -129,19 +169,19 @@ class WapConfiguration
             if (!$WapConfiguration) {
                 Write-Verbose -Message 'Configuring Web Application Proxy.';
                 $WapSettings = @{
-                    Credential = $this.Credential;
+                    Credential            = $this.Credential;
                     CertificateIdentifier = $this.CertificateIdentifier;
-                    Certificate = $this.Certificate;
+                    Certificate           = $this.Certificate;
                     FederationServiceName = $this.FederationServiceName;
                 };
                 if ($this.HttpsPort) {
-                    $WapSettings.Add('HttpsPort',$this.HttpsPort)
+                    $WapSettings.Add('HttpsPort', $this.HttpsPort)
                 }
                 ConfigureWAP @WapSettings;
             }
 
             if ($WapConfiguration) {
-				#Nothing we can do to reconfigure the service here either, so do nothing
+                #Nothing we can do to reconfigure the service here either, so do nothing
             }
         }
 
@@ -151,10 +191,9 @@ class WapConfiguration
         }
 
         return;
-	}
+    }
 
-	[bool] Test()
-	{
+    [bool] Test() {
         # Assume compliance by default
         $Compliant = $true;
 
@@ -187,6 +226,6 @@ class WapConfiguration
         }
 
         return $Compliant;
-	}
+    }
 
 }
